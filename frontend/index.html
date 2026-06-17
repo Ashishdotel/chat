@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="ne">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>नेपाली च्याटबट | Nepali Chatbot</title>
+
+  <link
+    href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;500;600&family=Inter:wght@400;500;600&display=swap"
+    rel="stylesheet"
+  />
+
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+
+<body>
+  <div class="app-container">
+
+    <!-- ===================== SIDEBAR ===================== -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <div class="logo">
+          <span class="logo-icon">🇳🇵</span>
+          <div class="logo-text">
+            <h1>नेपाली च्याटबट</h1>
+            <p>Nepali AI Chatbot</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- New Chat Button -->
+      <button class="btn-new-chat" id="btnNewChat">
+        <span class="btn-icon">＋</span>
+        नयाँ कुराकानी
+        <small>New Chat</small>
+      </button>
+
+      <!-- Past Conversations List -->
+      <div class="history-panel">
+        <div class="history-header">
+          <h3>पुराना कुराकानीहरू <small>Past Chats</small></h3>
+          <button class="btn-refresh" id="btnRefreshHistory" title="Refresh">↻</button>
+        </div>
+        <div class="history-list" id="historyList">
+          <p class="history-empty">कुनै पुरानो कुराकानी छैन।<br/><small>No past conversations.</small></p>
+        </div>
+      </div>
+
+      <!-- Session Info Panel -->
+      <div class="session-panel">
+        <h3>सत्र जानकारी <small>Session Info</small></h3>
+        <div class="session-detail">
+          <label>Session ID</label>
+          <span id="sessionIdDisplay" class="session-id-text">—</span>
+        </div>
+        <div class="session-detail">
+          <label>सन्देश संख्या <small>(Messages)</small></label>
+          <span id="messageCountDisplay">0</span>
+        </div>
+        <div class="session-detail">
+          <label>स्थिति <small>(Status)</small></label>
+          <span id="statusDisplay" class="status-badge status-idle">तयार</span>
+        </div>
+      </div>
+
+      <!-- RAG Document Panel -->
+      <div class="rag-panel" id="ragPanel">
+        <div class="rag-header">
+          <h3>📄 दस्तावेजहरू <small>Documents (RAG)</small></h3>
+          <span class="rag-badge" id="ragBadge">OFF</span>
+        </div>
+
+        <div class="upload-area" id="uploadArea">
+          <input type="file" id="fileInput" accept=".pdf" style="display:none" />
+          <div class="upload-drop-zone" id="dropZone">
+            <span class="upload-icon">📤</span>
+            <p>PDF ड्र्याग गर्नुहोस् वा<br/>
+              <button class="btn-browse" id="btnBrowse">फाइल छान्नुहोस्</button>
+            </p>
+            <small>Max 50MB · PDF only</small>
+          </div>
+          <div class="upload-progress" id="uploadProgress" style="display:none">
+            <div class="progress-bar">
+              <div class="progress-fill" id="progressFill"></div>
+            </div>
+            <span id="progressLabel">प्रक्रिया हुँदैछ...</span>
+          </div>
+        </div>
+
+        <div class="doc-list" id="docList">
+          <p class="doc-empty">कुनै दस्तावेज छैन।<br/><small>No documents indexed.</small></p>
+        </div>
+      </div>
+
+      <div class="sidebar-footer">
+        <div class="about-box">
+          <p>🎓 University Thesis Project</p>
+          <p>Powered by Anthropic Claude</p>
+          <p>FastAPI + SQLite Backend</p>
+        </div>
+      </div>
+    </aside>
+
+    <!-- ===================== MAIN AREA ===================== -->
+    <main class="chat-main">
+
+      <!-- ── TAB BAR ─────────────────────────────────────────────────────────── -->
+      <nav class="main-tabs">
+        <button class="main-tab active" id="tabChat" onclick="switchMainTab('chat')">
+          💬 Chat
+        </button>
+        <button class="main-tab" id="tabTranslate" onclick="switchMainTab('translate')">
+          🌐 Translate
+        </button>
+      </nav>
+
+      <!-- ==================== CHAT PANEL ==================== -->
+      <div class="tab-panel" id="panelChat">
+
+        <header class="chat-header">
+          <div class="header-left">
+            <h2>नेपाली भाषा बुद्धिमान च्याटबट</h2>
+            <p>Nepali Language Intelligent Chatbot</p>
+          </div>
+          <div class="header-right">
+            <!-- Language selector for chat responses -->
+            <div class="lang-selector-group">
+              <label class="lang-label">Reply in:</label>
+              <select id="chatLanguageSelect" class="language-select">
+                <option value="ne">🇳🇵 नेपाली</option>
+                <option value="en">🇬🇧 English</option>
+                <option value="hi">🇮🇳 हिन्दी</option>
+                <option value="zh">🇨🇳 中文</option>
+                <option value="ja">🇯🇵 日本語</option>
+                <option value="ko">🇰🇷 한국어</option>
+                <option value="es">🇪🇸 Español</option>
+                <option value="fr">🇫🇷 Français</option>
+                <option value="de">🇩🇪 Deutsch</option>
+                <option value="ar">🇸🇦 العربية</option>
+              </select>
+            </div>
+            <div class="model-badge" id="modelBadge">Claude</div>
+          </div>
+        </header>
+
+        <div class="chat-messages" id="chatMessages">
+          <div class="welcome-screen" id="welcomeScreen">
+            <div class="welcome-icon">🙏</div>
+            <h2>नमस्ते!</h2>
+            <p>म तपाईंको नेपाली भाषा सहायक हुँ।</p>
+            <p class="welcome-sub">I am your multilingual assistant.<br/>Select your language above and ask me anything — I can help with translation, meanings, and more!</p>
+
+            <div class="suggestion-chips">
+              <button class="chip" data-msg="नेपालको राजधानी कुन हो?">🏔️ नेपालको राजधानी कुन हो?</button>
+              <button class="chip" data-msg="What does 'स्वतन्त्रता' mean in English?">🔤 What does 'स्वतन्त्रता' mean?</button>
+              <button class="chip" data-msg="मलाई नेपाली व्याकरण सिकाउनुहोस्।">📚 नेपाली व्याकरण सिकाउनुहोस्</button>
+              <button class="chip" data-msg="Translate 'Hello, how are you?' to Nepali">🌐 Translate to Nepali</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="typing-indicator" id="typingIndicator" style="display:none;">
+          <div class="typing-avatar">🤖</div>
+          <div class="typing-bubble">
+            <span></span><span></span><span></span>
+          </div>
+          <span class="typing-text">च्याटबट टाइप गर्दैछ...</span>
+        </div>
+
+        <div class="error-banner" id="errorBanner" style="display:none;">
+          <span class="error-icon">⚠️</span>
+          <span id="errorMessage">माफ गर्नुहोस्, त्रुटि भयो।</span>
+          <button onclick="hideError()">✕</button>
+        </div>
+
+        <div class="chat-input-area">
+          <div class="input-wrapper">
+            <textarea
+              id="messageInput"
+              class="message-input"
+              placeholder="यहाँ आफ्नो सन्देश लेख्नुहोस्... (Type your message in any language)"
+              rows="1"
+              maxlength="2000"
+            ></textarea>
+            <div class="input-actions">
+              <span class="char-count" id="charCount">0/2000</span>
+              <button class="btn-send" id="btnSend" disabled>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                     stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="22" y1="2" x2="11" y2="13"></line>
+                  <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                </svg>
+              </button>
+            </div>
+          </div>
+          <p class="input-hint">
+            Enter थिच्नुहोस् पठाउन | Shift+Enter नयाँ लाइनको लागि
+            <span>(Press Enter to send | Shift+Enter for new line)</span>
+          </p>
+        </div>
+
+      </div><!-- /panelChat -->
+
+      <!-- ==================== TRANSLATE PANEL ==================== -->
+      <div class="tab-panel hidden" id="panelTranslate">
+
+        <header class="chat-header">
+          <div class="header-left">
+            <h2>🌐 Language Translator</h2>
+            <p>भाषा अनुवादक — Translate text or scan documents</p>
+          </div>
+        </header>
+
+        <!-- Sub-tabs: Text | Document -->
+        <div class="subtab-bar">
+          <button class="subtab-btn active" id="subtabText" onclick="switchSubtab('text')">
+            ✏️ Text
+            <small>Type to translate</small>
+          </button>
+          <button class="subtab-btn" id="subtabDoc" onclick="switchSubtab('document')">
+            📄 Document / Image
+            <small>Scan &amp; translate</small>
+          </button>
+        </div>
+
+        <!-- ── TEXT TRANSLATOR ───────────────────────────────────────────── -->
+        <div class="translate-content" id="translateTextPanel">
+
+          <div class="translate-lang-bar">
+            <select id="sourceLang" class="language-select lang-wide">
+              <option value="auto">🔍 Auto-detect</option>
+              <option value="ne">🇳🇵 नेपाली</option>
+              <option value="en">🇬🇧 English</option>
+              <option value="hi">🇮🇳 हिन्दी</option>
+              <option value="zh">🇨🇳 中文</option>
+              <option value="ja">🇯🇵 日本語</option>
+              <option value="ko">🇰🇷 한국어</option>
+              <option value="es">🇪🇸 Español</option>
+              <option value="fr">🇫🇷 Français</option>
+              <option value="de">🇩🇪 Deutsch</option>
+              <option value="ar">🇸🇦 العربية</option>
+              <option value="pt">🇵🇹 Português</option>
+              <option value="ru">🇷🇺 Русский</option>
+            </select>
+
+            <button class="btn-swap-langs" id="btnSwapLangs" title="Swap languages">
+              ⇄
+            </button>
+
+            <select id="targetLang" class="language-select lang-wide">
+              <option value="ne">🇳🇵 नेपाली</option>
+              <option value="en">🇬🇧 English</option>
+              <option value="hi">🇮🇳 हिन्दी</option>
+              <option value="zh">🇨🇳 中文</option>
+              <option value="ja">🇯🇵 日本語</option>
+              <option value="ko">🇰🇷 한국어</option>
+              <option value="es">🇪🇸 Español</option>
+              <option value="fr">🇫🇷 Français</option>
+              <option value="de">🇩🇪 Deutsch</option>
+              <option value="ar">🇸🇦 العربية</option>
+              <option value="pt">🇵🇹 Português</option>
+              <option value="ru">🇷🇺 Русский</option>
+            </select>
+          </div>
+
+          <div class="translate-workspace">
+
+            <!-- Input side -->
+            <div class="translate-box">
+              <textarea
+                id="sourceText"
+                class="translate-textarea"
+                placeholder="Enter text to translate here... (any language)"
+                maxlength="5000"
+              ></textarea>
+              <div class="translate-box-footer">
+                <span class="char-count" id="sourceCharCount">0 / 5000</span>
+                <button class="btn-text-sm" onclick="clearSourceText()">✕ Clear</button>
+              </div>
+            </div>
+
+            <!-- Translate button (center) -->
+            <div class="translate-arrow">
+              <button class="btn-translate" id="btnTranslate">
+                🌐 Translate
+              </button>
+            </div>
+
+            <!-- Output side -->
+            <div class="translate-box output-box">
+              <div id="translationOutput" class="translate-output">
+                <span class="output-placeholder">Translation will appear here...</span>
+              </div>
+              <div class="translate-box-footer">
+                <span class="char-count" id="translatedCharCount"></span>
+                <button class="btn-text-sm" id="btnCopyTranslation" style="display:none" onclick="copyTranslation()">
+                  📋 Copy
+                </button>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Translation error -->
+          <div class="translate-error" id="translateError" style="display:none">
+            <span>⚠️</span>
+            <span id="translateErrorMsg">Translation failed.</span>
+            <button onclick="hideTranslateError()">✕</button>
+          </div>
+
+        </div><!-- /translateTextPanel -->
+
+        <!-- ── DOCUMENT / IMAGE TRANSLATOR ───────────────────────────────── -->
+        <div class="translate-content hidden" id="translateDocPanel">
+
+          <div class="translate-lang-bar">
+            <span class="lang-label">Translate to:</span>
+            <select id="docTargetLang" class="language-select lang-wide">
+              <option value="ne">🇳🇵 नेपाली</option>
+              <option value="en">🇬🇧 English</option>
+              <option value="hi">🇮🇳 हिन्दी</option>
+              <option value="zh">🇨🇳 中文</option>
+              <option value="ja">🇯🇵 日本語</option>
+              <option value="ko">🇰🇷 한국어</option>
+              <option value="es">🇪🇸 Español</option>
+              <option value="fr">🇫🇷 Français</option>
+              <option value="de">🇩🇪 Deutsch</option>
+              <option value="ar">🇸🇦 العربية</option>
+              <option value="pt">🇵🇹 Português</option>
+              <option value="ru">🇷🇺 Русский</option>
+            </select>
+            <span class="lang-hint">PDF or image (JPG, PNG, WEBP) · Max 10MB</span>
+          </div>
+
+          <!-- Upload zone -->
+          <input type="file" id="docFileInput" accept=".pdf,.jpg,.jpeg,.png,.webp,.gif" style="display:none" />
+
+          <div class="doc-drop-zone" id="docDropZone">
+            <div class="doc-drop-content">
+              <span class="upload-icon">📄</span>
+              <p>Drag &amp; drop your file here</p>
+              <p class="doc-drop-sub">PDF · JPG · PNG · WEBP · GIF</p>
+              <button class="btn-primary" id="btnDocBrowse">Browse File</button>
+            </div>
+          </div>
+
+          <!-- Progress -->
+          <div class="doc-progress" id="docProgress" style="display:none">
+            <div class="progress-bar">
+              <div class="progress-fill" id="docProgressFill"></div>
+            </div>
+            <span id="docProgressLabel">Processing...</span>
+          </div>
+
+          <!-- Results -->
+          <div class="doc-results" id="docResults" style="display:none">
+            <div class="doc-result-header">
+              <span id="docResultFilename" class="doc-filename"></span>
+              <button class="btn-text-sm" onclick="resetDocTranslator()">↺ Translate another</button>
+            </div>
+
+            <div class="doc-result-grid">
+              <div class="doc-result-section">
+                <h4>📝 Original Text</h4>
+                <div class="doc-result-text" id="docOriginalText"></div>
+              </div>
+              <div class="doc-result-section">
+                <h4>🌐 Translated Text</h4>
+                <div class="doc-result-text" id="docTranslatedText"></div>
+                <button class="btn-copy-doc" onclick="copyDocTranslation()">📋 Copy Translation</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Error -->
+          <div class="translate-error" id="docTranslateError" style="display:none">
+            <span>⚠️</span>
+            <span id="docTranslateErrorMsg">Translation failed.</span>
+            <button onclick="hideDocError()">✕</button>
+          </div>
+
+        </div><!-- /translateDocPanel -->
+
+      </div><!-- /panelTranslate -->
+
+    </main>
+  </div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
