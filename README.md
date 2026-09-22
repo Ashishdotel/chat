@@ -786,12 +786,13 @@ All configuration is stored in the `.env` file:
 
 | Field | Detail |
 |---|---|
-| **Student** | Keshav Dahal |
-| **Email** | keshavwork160@gmail.com |
+| **Student** |Ashish Dotel |
+| **Email** | ashishdotel007@gmail.com |
 | **Thesis Title** | Development of a Nepali Language Intelligent Chatbot with Multilingual Translation Capabilities |
-| **Project Type** | Final Year Undergraduate Thesis |
+| **Project Type** | Final Year  Thesis |
 | **Year** | 2025 |
-| **Technologies** | FastAPI, Anthropic Claude AI, SQLite, FAISS, HTML/CSS/JS |
+| **Technologies** | FastAPI, ollama
+, SQLite, FAISS, HTML/CSS/JS |
 
 ### Key Contributions of This Thesis
 
